@@ -45,16 +45,47 @@ using namespace epee;
 
 #undef MONERO_DEFAULT_LOG_CATEGORY
 #define MONERO_DEFAULT_LOG_CATEGORY "cn"
+
+#define ELECTRONERO_HARDFORK ((uint64_t)(310787)) 
 #define MAINNET_HARDFORK_V1_HEIGHT ((uint64_t)(1)) // MAINNET v1 
 #define MAINNET_HARDFORK_V7_HEIGHT ((uint64_t)(307003)) // MAINNET v7 hard fork 
 #define MAINNET_HARDFORK_V8_HEIGHT ((uint64_t)(307054)) // MAINNET v8 hard fork 
 #define MAINNET_HARDFORK_V9_HEIGHT ((uint64_t)(308110)) // MAINNET v9 hard fork 
 #define MAINNET_HARDFORK_V10_HEIGHT ((uint64_t)(310790)) // MAINNET v10 hard fork 
 #define MAINNET_HARDFORK_V11_HEIGHT ((uint64_t)(310860)) // MAINNET v11 hard fork -- 70 blocks difference from 10
-#define MAINNET_HARDFORK_V12_HEIGHT ((uint64_t)(333690)) // MAINNET v12 hard fork 
+#define MAINNET_HARDFORK_V12_HEIGHT ((uint64_t)(333690)) // MAINNET 72289156 hard fork 
 #define MAINNET_HARDFORK_V13_HEIGHT ((uint64_t)(337496)) // MAINNET v13 hard fork  
 #define MAINNET_HARDFORK_V14_HEIGHT ((uint64_t)(337816)) // MAINNET v14 hard fork
-#define MAINNET_HARDFORK_V15_HEIGHT ((uint64_t)(337838)) // MAINNET v15 hard fork test
+#define MAINNET_HARDFORK_V15_HEIGHT ((uint64_t)(337838)) // MAINNET v15 hard fork 
+#define MAINNET_HARDFORK_V16_HEIGHT ((uint64_t)(500060)) // MAINNET v16 hard fork 
+
+#define TESTNET_ELECTRONERO_HARDFORK ((uint64_t)(12746)) // Electronero TESTNET fork height
+#define TESTNET_HARDFORK_V1_HEIGHT ((uint64_t)(1)) // TESTNET v1 
+#define TESTNET_HARDFORK_V7_HEIGHT ((uint64_t)(307003)) // TESTNET v7 hard fork 
+#define TESTNET_HARDFORK_V8_HEIGHT ((uint64_t)(307054)) // TESTNET v8 hard fork 
+#define TESTNET_HARDFORK_V9_HEIGHT ((uint64_t)(308110)) // TESTNET v9 hard fork
+#define TESTNET_HARDFORK_V10_HEIGHT ((uint64_t)(310790)) // TESTNET v10 hard fork
+#define TESTNET_HARDFORK_V11_HEIGHT ((uint64_t)(310860)) // TESTNET v11 hard fork
+#define TESTNET_HARDFORK_V12_HEIGHT ((uint64_t)(333690)) // TESTNET v12 hard fork
+#define TESTNET_HARDFORK_V13_HEIGHT ((uint64_t)(337496)) // TESTNET v13 hard fork
+#define TESTNET_HARDFORK_V14_HEIGHT ((uint64_t)(337816)) // TESTNET v14 hard fork
+#define TESTNET_HARDFORK_V15_HEIGHT ((uint64_t)(337838)) // TESTNET v15 hard fork
+#define TESTNET_HARDFORK_V16_HEIGHT ((uint64_t)(492500)) // TESTNET v16 hard fork
+
+#define STAGENET_HARDFORK_V1_HEIGHT ((uint64_t)(1)) // MAINNET v1 
+#define STAGENET_HARDFORK_V7_HEIGHT ((uint64_t)(307003)) // MAINNET v7 hard fork 
+#define STAGENET_HARDFORK_V8_HEIGHT ((uint64_t)(307054)) // MAINNET v8 hard fork 
+#define STAGENET_HARDFORK_V9_HEIGHT ((uint64_t)(308110)) // MAINNET v9 hard fork 
+#define STAGENET_HARDFORK_V10_HEIGHT ((uint64_t)(310790)) // MAINNET v10 hard fork 
+#define STAGENET_HARDFORK_V11_HEIGHT ((uint64_t)(310860)) // MAINNET v11 hard fork -- 70 blocks difference from 10
+#define STAGENET_HARDFORK_V12_HEIGHT ((uint64_t)(333690)) // MAINNET 72289156 hard fork 
+#define STAGENET_HARDFORK_V13_HEIGHT ((uint64_t)(337496)) // MAINNET v13 hard fork  
+#define STAGENET_HARDFORK_V14_HEIGHT ((uint64_t)(337816)) // MAINNET v14 hard fork
+#define STAGENET_HARDFORK_V15_HEIGHT ((uint64_t)(337838)) // MAINNET v15 hard fork
+#define STAGENET_HARDFORK_V16_HEIGHT ((uint64_t)(492500)) // TESTNET v16 hard fork
+#define STAGENET_HARDFORK_V17_HEIGHT ((uint64_t)(492530)) // TESTNET v17 hard fork
+#define STAGENET_HARDFORK_V18_HEIGHT ((uint64_t)(492540)) // TESTNET v18 hard fork
+
 namespace cryptonote {
 
   struct integrated_address {
@@ -98,23 +129,33 @@ namespace cryptonote {
   bool get_block_reward(size_t median_size, size_t current_block_size, uint64_t already_generated_coins, uint64_t &reward, uint8_t version, uint64_t height) {
     static_assert(DIFFICULTY_TARGET_V2%60==0&&DIFFICULTY_TARGET_V1%60==0,"difficulty targets must be a multiple of 60");
     uint64_t versionHeight = height; // alias used for emissions
-    uint64_t TOKEN_SUPPLY = version < 7 ? MONEY_SUPPLY_ETN : version >= 10 ? TOKENS : MONEY_SUPPLY;
-    const int target = versionHeight < MAINNET_HARDFORK_V7_HEIGHT ? DIFFICULTY_TARGET_V1 : versionHeight >= MAINNET_HARDFORK_V14_HEIGHT ? DIFFICULTY_TARGET_V1 : DIFFICULTY_TARGET_V2;
+    uint64_t TOKEN_SUPPLY = version < 7 ? MONEY_SUPPLY_ETN : version < 10 ? MONEY_SUPPLY : version < 16 ? TOKENS : ELECTRONERO_TOKENS;
+    const int target = (uint64_t)versionHeight < MAINNET_HARDFORK_V7_HEIGHT ? DIFFICULTY_TARGET_V1 : (uint64_t)versionHeight >= MAINNET_HARDFORK_V14_HEIGHT ? DIFFICULTY_TARGET_V1 : DIFFICULTY_TARGET_V2;
     const int target_minutes = target / 60;
     const int emission_speed_factor = EMISSION_SPEED_FACTOR_PER_MINUTE - (target_minutes-1); 
     const int emission_speed_factor_v2 = EMISSION_SPEED_FACTOR_PER_MINUTE + (target_minutes-1);
     const int emission_speed_factor_v3 = EMISSION_SPEED_FACTOR_PER_MINUTE + (target_minutes-2); // v10
-    uint64_t emission_speed = versionHeight < MAINNET_HARDFORK_V7_HEIGHT ? emission_speed_factor : versionHeight >= MAINNET_HARDFORK_V10_HEIGHT ? emission_speed_factor_v3 : emission_speed_factor_v2;
+    const int emission_speed_factor_v4 = EMISSION_SPEED_FACTOR_PER_MINUTE - (target_minutes-1); // v16 - 20 emf until 120 seconds block then 19 emf
+    uint64_t emission_speed = (uint64_t)versionHeight < MAINNET_HARDFORK_V7_HEIGHT ? emission_speed_factor : (uint64_t)versionHeight < MAINNET_HARDFORK_V10_HEIGHT ? emission_speed_factor_v2 : (uint64_t)versionHeight < MAINNET_HARDFORK_V16_HEIGHT ? emission_speed_factor_v3 : emission_speed_factor_v4;
     uint64_t base_reward = (TOKEN_SUPPLY - already_generated_coins) >> emission_speed_factor;
     
     const uint64_t premine = 1260000000000U;
-    const uint64_t airdrop = premine;
-    if (height == 1 || height == 307003 || height == 310790) {
-      reward = airdrop;
+    if ((uint64_t)height == 1) {
+      reward = premine;
+      return true;
+    }
+    const uint64_t communityAirdrop = premine;
+    if ((uint64_t)height == 307003 || (uint64_t)height == 310790) {
+      reward = communityAirdrop;
+      return true;
+    }
+    const uint64_t electronero_genesis = 613090000000000U;
+    if ((uint64_t)height == 500060) {
+      reward = electronero_genesis;
       return true;
     }
     uint64_t round_factor = 10; // 1 * pow(10, 1)
-    if (version >= 7 && height > 307003)
+    if (version >= 7 && (uint64_t)height > 307003)
     {
       if (height < (PEAK_COIN_EMISSION_HEIGHT + COIN_EMISSION_HEIGHT_INTERVAL)) {
         uint64_t interval_num = height / COIN_EMISSION_HEIGHT_INTERVAL;
@@ -131,16 +172,14 @@ namespace cryptonote {
       base_reward = (TOKEN_SUPPLY - already_generated_coins) >> emission_speed;
     }
     
-   const uint64_t FINITE_SUBSIDY = 100U;
-   if (base_reward < FINITE_SUBSIDY){
-     if (already_generated_coins >= (TOKEN_SUPPLY - already_generated_coins)){
+    // maybe work on better final subsidy later
+   const uint64_t FINITE_SUBSIDY = 66600U;
+    if (base_reward < FINITE_SUBSIDY){
+     if (already_generated_coins >= TOKEN_SUPPLY){
        base_reward = FINAL_SUBSIDY_PER_MINUTE;
      }
-     else{
-       base_reward = FINITE_SUBSIDY/2;
-     }
-   }
-    
+    }
+
     // rounding (floor) base reward
     if (version > 7)
     {
